@@ -8,16 +8,24 @@ class Log
 {
     protected string $folder = '';
 
+    /**
+     * Reference : https://www.php.net/manual/en/function.mkdir.php
+     * use for create folder permission
+     */
+    protected int $permission = 0777;
+
     protected string $file_name = 'log.txt';
 
     protected string $mode = 'a';
 
     protected $opened_file = null;
 
-
     public function open()
     {
         if ($this->opened_file) return $this;
+        //check dir first and create it if not exist
+        if (!is_dir($this->folder)) if (!mkdir($this->folder, $this->permission, true)) 
+            throw new \Exception(__CLASS__ . ' ' . __FUNCTION__ . " system can't create dir from $this->folder");
         $this->opened_file = fopen("$this->folder/$this->file_name", $this->mode);
         if ($this->opened_file === false) throw new \Exception(__CLASS__ . ' ' . __FUNCTION__ . " system can't open such the file $this->file_name in $this->folder");
         return $this;
@@ -32,6 +40,14 @@ class Log
     {
         if ($v == $this->folder) return $this;
         $this->folder = $v;
+        $this->close(); // flush opened resource
+        return $this;
+    }
+
+    public function appendFolder(string $v)
+    {
+        if (!$v) return $this;
+        $this->folder .= $v;
         $this->close(); // flush opened resource
         return $this;
     }
@@ -85,6 +101,13 @@ class Log
         return $this;
     }
 
+    public function writeOnce(string $v)
+    {
+        $this->write($v);
+        $this->close();
+        return $this;
+    }
+
     public function close()
     {
         if (!$this->opened_file) return $this;
@@ -93,5 +116,8 @@ class Log
         return $this;
     }
 
-
+    public function __destruct()
+    {
+        $this->close();
+    }
 }
